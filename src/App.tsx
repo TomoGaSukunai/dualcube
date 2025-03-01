@@ -1,5 +1,5 @@
 import './App.css'
-import DualCubeCanvas from './DualCube'
+import DualCubeCanvas from './DualCubeCanvas'
 
 
 function App() {
