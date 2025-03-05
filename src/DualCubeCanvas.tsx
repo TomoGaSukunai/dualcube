@@ -1,6 +1,6 @@
 
-import { PropsWithChildren, useEffect, useRef } from 'react'
-import { mat4, CubeMesh } from './CubeMath'
+import { useEffect, useRef } from 'react'
+import { mat4, CubeMesh } from './Cube'
 import shaders from './shaders'
 
 interface glProgram {
@@ -24,11 +24,11 @@ interface glProgram {
 
 const World = {
     projectMatrix: mat4.getPerspective(45, 1, 0.1, 100),
-    viewMatrix: mat4.getEye(),
+    viewMatrix: mat4.getEye().translate(0, 0, -5),
     moveMatrix: mat4.getEye(),
     program: {} as glProgram,
 }
-World.viewMatrix[14] -= 5
+
 
 let timestamp = Date.now()
 
@@ -132,7 +132,7 @@ function textureInit(gl: WebGL2RenderingContext, texid: GLenum, img: HTMLImageEl
     }
 }
 
-function DualCubeCanvas(props: PropsWithChildren) {
+function DualCubeCanvas(props: any) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
     const resizeCanvas = (canvas: HTMLCanvasElement) => {
@@ -146,6 +146,7 @@ function DualCubeCanvas(props: PropsWithChildren) {
         }
         return false;
     }
+
     const draw = (canvas: HTMLCanvasElement, gl: WebGL2RenderingContext) => {
         resizeCanvas(canvas)
 
@@ -154,7 +155,7 @@ function DualCubeCanvas(props: PropsWithChildren) {
         World.moveMatrix.rotateY(rY)
         World.moveMatrix.rotateX(rX)
 
-        rY += 0.001 * deltaTime
+        if (props.press) rY += 0.001 * deltaTime
 
         gl.viewport(0, 0, canvas.width, canvas.height)
 
@@ -263,7 +264,7 @@ function DualCubeCanvas(props: PropsWithChildren) {
 
     }, [draw])
 
-    return <canvas ref={canvasRef} {...props} />
+    return <canvas ref={canvasRef} />
 
 }
 

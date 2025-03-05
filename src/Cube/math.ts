@@ -35,6 +35,7 @@ class mat4 extends Float32Array {
         this[2] = s * mv1 + c * this[2]
         this[6] = s * mv5 + c * this[6]
         this[10] = s * mv9 + c * this[10]
+        return this
     }
     rotateY(angle: number) {
         const c = Math.cos(angle);
@@ -48,6 +49,7 @@ class mat4 extends Float32Array {
         this[0] = c * this[0] + s * mv2;
         this[4] = c * this[4] + s * mv6;
         this[8] = c * this[8] + s * mv10;
+        return this
     }
     
     rotateZ(angle: number) {
@@ -62,6 +64,15 @@ class mat4 extends Float32Array {
         this[1] = c * this[1] + s * mv0;
         this[5] = c * this[5] + s * mv4;
         this[9] = c * this[9] + s * mv8;
+        return this
+    }
+
+    translate(x: number, y: number, z: number) {
+        this[12] += x;
+        this[13] += y;
+        this[14] += z;
+        return this
+        
     }
 }
 

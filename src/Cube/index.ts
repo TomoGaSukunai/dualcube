@@ -14,7 +14,6 @@ interface bufferdMesh extends Mesh {
     indexBuffer: WebGLBuffer | null,
     colorBuffer: WebGLBuffer | null,
     vertexBuffer2: WebGLBuffer | null,
-
     indexBuffer2: WebGLBuffer | null,
     uvBuffer: WebGLBuffer | null,
     moveMatrix: Float32List | null,
