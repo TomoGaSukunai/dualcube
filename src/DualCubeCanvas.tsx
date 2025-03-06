@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react'
 import { mat4, CubeMesh } from './Cube'
 import shaders from './shaders'
+import senpaiURL from './assets/senpai.jpg'
 
 interface glProgram {
     color: number
@@ -89,12 +90,12 @@ function blockBufferInit(gl: WebGL2RenderingContext, block: any) {
 
     const vertexBuffer2 = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer2)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.vertices2), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.verticesTex), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null)
 
     const indexBuffer2 = gl.createBuffer()
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer2)
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.indices2), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.indicesTex), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
 
     const uvBuffer = gl.createBuffer()
@@ -184,6 +185,25 @@ function DualCubeCanvas(props: any) {
             gl.drawElements(gl.TRIANGLES, block.indices.length, gl.UNSIGNED_SHORT, 0)
         }
 
+        gl.useProgram(World.program.texProgram)
+        gl.uniformMatrix4fv(World.program.texPmatrix, false, World.projectMatrix)
+        gl.uniformMatrix4fv(World.program.texVmatrix, false, World.viewMatrix)
+        gl.uniformMatrix4fv(World.program.texMmatrix, false, World.moveMatrix)
+
+        for (const idx in CubeMesh) {           
+            const block = CubeMesh[idx]
+            if (block.moveMatrix) {
+                gl.uniformMatrix4fv(World.program.texLmatrix, false, block.moveMatrix) 
+            }
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.indexBuffer2)
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, block.vertexBuffer2)
+            gl.vertexAttribPointer(World.program.texCoord, 3, gl.FLOAT, false, 0, 0)
+            gl.bindBuffer(gl.ARRAY_BUFFER, block.uvBuffer)
+            gl.vertexAttribPointer(World.program.texUvs, 2, gl.FLOAT, false, 0, 0)
+            gl.uniform1i(World.program.texSampler, 0)
+            gl.drawElements(gl.TRIANGLES, block.indicesTex.length, gl.UNSIGNED_SHORT, 0)
+        }
 
 
 
@@ -246,7 +266,10 @@ function DualCubeCanvas(props: any) {
 
         }
 
+        const senpaiIamge = document.createElement('img')
+        senpaiIamge.src = senpaiURL
 
+        textureInit(gl, gl.TEXTURE0, senpaiIamge)
 
         let frameCount = 0;
         let animationFrameId: number;

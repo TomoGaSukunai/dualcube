@@ -24,7 +24,7 @@ const grey = [.8, .8, .8];
 
 const CubeMesh: bufferdMesh[] = [];
 const zero = [0, 0, 0];
-const faceTex = [false, false, false, false, false, false];
+const faceTex = [false, false, false, false, false, true];
 const outRate = 0.02
 for (let i in CubeDefine.BLOCKS) {
 
@@ -90,7 +90,7 @@ for (let i in CubeDefine.BLOCKS) {
         indices: indices,
         colors: colors.flat(),
         verticesTex: verticesTex.flat(),
-        uvs: uvs.flat(),
+        uvs: uvs.flat().map(x => (1 - x) / 2),
         indicesTex: indicesTex,
         vertexBuffer: null,
         indexBuffer: null,
@@ -100,6 +100,7 @@ for (let i in CubeDefine.BLOCKS) {
         uvBuffer: null,
         moveMatrix: null
     }
+
     CubeMesh.push(block);
 }
 
