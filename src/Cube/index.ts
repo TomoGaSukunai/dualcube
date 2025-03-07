@@ -25,8 +25,8 @@ const grey = [.8, .8, .8];
 const CubeMesh: bufferdMesh[] = [];
 const zero = [0, 0, 0];
 const faceTex = [false, false, false, false, false, true];
-const outRate = 0.02
-for (let i in CubeDefine.BLOCKS) {
+const outRate = 0.02;
+for (const i in CubeDefine.BLOCKS) {
 
     const vertices = [];
     const indices = [];
@@ -76,8 +76,8 @@ for (let i in CubeDefine.BLOCKS) {
     indices.push(...CubeDefine.CONNER_INDICES.map(idx => idx + indexOffset));
     vertices.push(zero);
     for (let j = 0; j < 3; j++) {
-        vertices.push(vertices[4 * j + 1])
-        vertices.push(vertices[4 * j + 2])
+        vertices.push(vertices[4 * j + 1]);
+        vertices.push(vertices[4 * j + 2]);
     }
     indexOffset += 3;
 
@@ -99,7 +99,7 @@ for (let i in CubeDefine.BLOCKS) {
         indexBuffer2: null,
         uvBuffer: null,
         moveMatrix: null
-    }
+    };
 
     CubeMesh.push(block);
 }
@@ -109,4 +109,4 @@ for (let i in CubeDefine.BLOCKS) {
 
 
 export { CubeDefine, mat4, CubeMesh };
-export type { Mesh };
+export type { Mesh, bufferdMesh };
