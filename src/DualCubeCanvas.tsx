@@ -1,6 +1,6 @@
 
-import { useEffect, useRef } from 'react';
-import { mat4, CubeMesh, bufferdMesh } from './Cube';
+import { useEffect, useRef, useState } from 'react';
+import { mat4, CubeMesh, bufferdMesh, CubeDefine } from './Cube';
 import shaders from './shaders';
 import senpaiURL from './assets/senpai.jpg';
 
@@ -143,9 +143,26 @@ const resizeCanvas = (canvas: HTMLCanvasElement) => {
 function DualCubeCanvas() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    const rX = 0;
+
+    //status
+    const [status, setStatus] = useState<number[]>(Array(16).fill(0));
+
+    const rX = 0.3;
     let rY = 0;
 
+
+    // test canvasRef change
+
+    let refChange = 0;
+    let refCur = canvasRef.current;
+    useEffect(() => {
+        if (refCur !== canvasRef.current) {
+            refCur = canvasRef.current;
+
+            refChange++;
+            console.log(refChange);
+        }
+    }, [canvasRef]);
 
 
     useEffect(() => {
@@ -256,7 +273,7 @@ function DualCubeCanvas() {
             gl.uniformMatrix4fv(World.program.texPmatrix, false, World.projectMatrix);
             gl.uniformMatrix4fv(World.program.texVmatrix, false, World.viewMatrix);
             gl.uniformMatrix4fv(World.program.texMmatrix, false, World.moveMatrix);
-
+            gl.activeTexture(gl.TEXTURE0);
             for (const idx in CubeMesh) {
                 const block = CubeMesh[idx];
                 if (block.moveMatrix) {
@@ -285,12 +302,28 @@ function DualCubeCanvas() {
 
         return () => {
             cancelAnimationFrame(animationFrameId);
-            
+
         };
 
     }, []);
 
-    return <canvas ref={canvasRef} />;
+    const handleRotate = (way: number, b: boolean) => {
+        const next_status = status.map(x => x);
+        for (const maplet of CubeDefine.MAPPING[way]) {
+            const src = b ? maplet[0] : maplet[1];
+            const dst = b ? maplet[1] : maplet[0];
+            const inc = b ? maplet[2] : (3 - maplet[2]) % 3;
+            next_status[dst] = status[src];
+            next_status[dst + 8] = (status[src + 8] + inc) % 3;
+        }
+        setStatus(next_status);
+    };
+
+    return <>
+        <canvas ref={canvasRef} />
+        <button onClick={() => handleRotate(1, true)}>1</button>
+
+    </>;
 
 }
 

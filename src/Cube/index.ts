@@ -107,6 +107,5 @@ for (const i in CubeDefine.BLOCKS) {
 
 
 
-
 export { CubeDefine, mat4, CubeMesh };
 export type { Mesh, bufferdMesh };
