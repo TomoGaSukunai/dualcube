@@ -3,7 +3,7 @@ class mat4 extends Float32Array {
         super(16);
         this.set(data);
     }
-    static getEye() {
+    static getEye():mat4 {
         return new mat4([
             1, 0, 0, 0,
             0, 1, 0, 0,

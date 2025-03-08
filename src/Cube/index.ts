@@ -8,6 +8,7 @@ interface Mesh {
     verticesTex: number[];
     uvs: number[];
     indicesTex: number[];
+    idx: number;
 }
 interface bufferdMesh extends Mesh {
     vertexBuffer: WebGLBuffer | null,
@@ -16,7 +17,7 @@ interface bufferdMesh extends Mesh {
     vertexBuffer2: WebGLBuffer | null,
     indexBuffer2: WebGLBuffer | null,
     uvBuffer: WebGLBuffer | null,
-    moveMatrix: Float32List | null,
+    moveMatrix: mat4 | null,
 }
 
 const grey = [.8, .8, .8];
@@ -86,6 +87,7 @@ for (const i in CubeDefine.BLOCKS) {
     verticesTex.forEach((p, j) => verticesTex[j] = p.map((k, l) => k + v0[l] * outRate));
 
     const block: bufferdMesh = {
+        idx: parseInt(i),
         vertices: vertices.flat(),
         indices: indices,
         colors: colors.flat(),

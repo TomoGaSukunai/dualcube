@@ -140,15 +140,14 @@ const resizeCanvas = (canvas: HTMLCanvasElement) => {
     return false;
 };
 
+const Blocks = CubeMesh.map(x => x);
 function DualCubeCanvas() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
 
     //status
-    const [status, setStatus] = useState<number[]>(Array(16).fill(0));
+    const [status, setStatus] = useState<number[]>([0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0]);
 
-    const rX = 0.3;
-    let rY = 0;
 
 
     // test canvasRef change
@@ -165,6 +164,13 @@ function DualCubeCanvas() {
     }, [canvasRef]);
 
 
+
+    
+    const dR = useRef(0);
+    const rX = useRef(0.3);
+    const rY = useRef(0);
+    const rotating_axis = useRef(-1);
+    const rotating_reverse = useRef(true);
     useEffect(() => {
         const canvas = canvasRef.current;
         const gl = canvas?.getContext('webgl2');
@@ -173,7 +179,7 @@ function DualCubeCanvas() {
             throw new Error('Failed to get WebGL2 context');
         }
 
-        for (const block of CubeMesh) {
+        for (const block of Blocks) {
             blockBufferInit(gl, block);
         }
 
@@ -232,15 +238,55 @@ function DualCubeCanvas() {
 
         const render = () => {
             frameCount++;
+            // if (frameCount % 100 == 0) {
+            //     console.log(frameCount);
+            // }
             resizeCanvas(canvasRef.current!);
 
             const deltaTime = Date.now() - timestamp;
             timestamp = Date.now();
-            World.moveMatrix.rotateY(rY);
-            World.moveMatrix.rotateX(rX);
+            World.moveMatrix.rotateY(rY.current);
+            World.moveMatrix.rotateX(rX.current);
 
-            rY += 0.001 * deltaTime;
+            rY.current += 0.001 * deltaTime;
 
+
+            if (rotating_axis.current != -1) {
+                const ddR = Math.min(dR.current + 0.01 * deltaTime, Math.PI / 2);
+                const rev = rotating_reverse.current ? -1 : 1;
+                const deg = rev * (ddR - dR.current);
+
+                for (const maplet of CubeDefine.MAPPING[rotating_axis.current]) {
+                    const src = rotating_reverse.current ? maplet[0] : maplet[1];
+                    const Block = Blocks[src];
+
+                    Block.moveMatrix?.rotateX(CubeDefine.FACES[rotating_axis.current][0] * deg);
+                    Block.moveMatrix?.rotateY(CubeDefine.FACES[rotating_axis.current][1] * deg);
+                    Block.moveMatrix?.rotateZ(CubeDefine.FACES[rotating_axis.current][2] * deg);
+                }
+
+                dR.current = ddR;
+                if (dR.current == Math.PI / 2) {
+                    const cubeRef = Blocks.map(x => x);
+                    for (const maplet of CubeDefine.MAPPING[rotating_axis.current]) {
+                        const src = rotating_reverse.current ? maplet[0] : maplet[1];
+                        const dst = rotating_reverse.current ? maplet[1] : maplet[0];
+                        Blocks[dst] = cubeRef[src];
+                    }
+                    // console.log(Blocks.map(blk => blk.idx));
+                    // for (const idx in Blocks) {
+                    //     const block = Blocks[idx];
+                    //     const dx = block.vertices[0] - CubeDefine.BLOCKS[idx][0];
+                    //     const dy = block.vertices[1] - CubeDefine.BLOCKS[idx][1];
+                    //     const dz = block.vertices[2] - CubeDefine.BLOCKS[idx][2];
+                    //     console.log(idx, dx, dy, dz);
+
+                    // }
+                    dR.current = 0;
+                    rotating_axis.current = -1;
+
+                }
+            }
 
             gl.viewport(0, 0, canvasRef.current!.width, canvasRef.current!.height);
 
@@ -249,13 +295,15 @@ function DualCubeCanvas() {
             gl.clear(gl.COLOR_BUFFER_BIT);
 
 
+
+            //draw color part
             gl.useProgram(World.program.colorProgram);
             gl.uniformMatrix4fv(World.program.Pmatrix, false, World.projectMatrix);
             gl.uniformMatrix4fv(World.program.Vmatrix, false, World.viewMatrix);
             gl.uniformMatrix4fv(World.program.Mmatrix, false, World.moveMatrix);
 
-            for (const idx in CubeMesh) {
-                const block = CubeMesh[idx];
+            for (const idx in Blocks) {
+                const block = Blocks[idx];
                 if (block.moveMatrix) {
                     gl.uniformMatrix4fv(World.program.Lmatrix, false, block.moveMatrix);
                 }
@@ -269,13 +317,14 @@ function DualCubeCanvas() {
                 gl.drawElements(gl.TRIANGLES, block.indices.length, gl.UNSIGNED_SHORT, 0);
             }
 
+            //draw texture part
             gl.useProgram(World.program.texProgram);
             gl.uniformMatrix4fv(World.program.texPmatrix, false, World.projectMatrix);
             gl.uniformMatrix4fv(World.program.texVmatrix, false, World.viewMatrix);
             gl.uniformMatrix4fv(World.program.texMmatrix, false, World.moveMatrix);
             gl.activeTexture(gl.TEXTURE0);
-            for (const idx in CubeMesh) {
-                const block = CubeMesh[idx];
+            for (const idx in Blocks) {
+                const block = Blocks[idx];
                 if (block.moveMatrix) {
                     gl.uniformMatrix4fv(World.program.texLmatrix, false, block.moveMatrix);
                 }
@@ -292,9 +341,7 @@ function DualCubeCanvas() {
 
 
             World.moveMatrix = mat4.getEye();
-            if (frameCount % 100 == 0) {
-                console.log(frameCount);
-            }
+
             animationFrameId = requestAnimationFrame(render);
 
         };
@@ -302,12 +349,14 @@ function DualCubeCanvas() {
 
         return () => {
             cancelAnimationFrame(animationFrameId);
-
         };
 
     }, []);
 
     const handleRotate = (way: number, b: boolean) => {
+        if (rotating_axis.current != -1) return;
+        rotating_axis.current = way;
+        rotating_reverse.current = b;
         const next_status = status.map(x => x);
         for (const maplet of CubeDefine.MAPPING[way]) {
             const src = b ? maplet[0] : maplet[1];
@@ -316,13 +365,24 @@ function DualCubeCanvas() {
             next_status[dst] = status[src];
             next_status[dst + 8] = (status[src + 8] + inc) % 3;
         }
+        console.log(next_status);
         setStatus(next_status);
     };
 
     return <>
         <canvas ref={canvasRef} />
+        <button onClick={() => handleRotate(0, true)}>0</button>
         <button onClick={() => handleRotate(1, true)}>1</button>
-
+        <button onClick={() => handleRotate(2, true)}>2</button>
+        <button onClick={() => handleRotate(3, true)}>3</button>
+        <button onClick={() => handleRotate(4, true)}>4</button>
+        <button onClick={() => handleRotate(5, true)}>5</button>
+        <button onClick={() => handleRotate(0, false)}>0</button>
+        <button onClick={() => handleRotate(1, false)}>1</button>
+        <button onClick={() => handleRotate(2, false)}>2</button>
+        <button onClick={() => handleRotate(3, false)}>3</button>
+        <button onClick={() => handleRotate(4, false)}>4</button>
+        <button onClick={() => handleRotate(5, false)}>5</button>
     </>;
 
 }
