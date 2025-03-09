@@ -1,51 +1,72 @@
 import CubeDefine from "./define";
 import mat4 from "./math";
 
-interface Mesh {
-    colorVertices: number[];
-    colorIndices: number[];
+
+
+
+interface ColorMesh {
+    coordinates: number[];
+    indices: number[];
     colors: number[];
-    texVertices: number[];
-    texUvs: number[];
-    texIndices: number[];
-    idx: number;
 }
 
-interface bufferdMesh extends Mesh {
-    colorVertexBuffer: WebGLBuffer | null,
-    colorIndexBuffer: WebGLBuffer | null,
-    colorsBuffer: WebGLBuffer | null,
-    texVertexBuffer: WebGLBuffer | null,
-    texIndexBuffer: WebGLBuffer | null,
-    texUvBuffer: WebGLBuffer | null,
-    moveMatrix: mat4 | null,
+interface TexuredMesh {
+    coordinates: number[];
+    uvs: number[];
+    indices: number[];
+    textureIdx: number;
 }
+
+interface CubeBlock {
+    innerFaces: ColorMesh;
+    outerFaces: TexuredMesh[];
+}
+
+interface BufferedCubeBlock extends CubeBlock {
+    colorProgramBuffers: {
+        coordinatesBuffer: WebGLBuffer | null,
+        colorsBuffer: WebGLBuffer | null,
+        indicesBuffer: WebGLBuffer | null,
+    };
+    texProgramBuffers: {
+        coordinatesBuffer: WebGLBuffer | null,
+        indicesBuffer: WebGLBuffer | null,
+        uvsBuffer: WebGLBuffer | null,
+        textureIdx: number,
+    }[];
+    moveMatrix: mat4;
+}
+
+
 
 const background = [.8, .8, .8];
-
-
-const CubeMesh: bufferdMesh[] = [];
 const zero = [0, 0, 0];
-const faceTex = [false, false, false, false, false, true];
-const outRate = 0.02;
+const cubeBlocks: CubeBlock[] = [];
+
+const vec3Sum = (a: number[], b: number[]) => a.map((x, i) => x + b[i]);
 for (const i in CubeDefine.BLOCKS) {
 
-    const vertices = [];
-    const indices = [];
-    const colors = [];
-
-
-
-    const verticesTex = [];
-    const uvs = [];
-    const indicesTex = [];
-
-
-    let indexOffset = 0;
-    let indexTexOffset = 0;
     const v0 = CubeDefine.BLOCKS[i]; // block farest point
+    const f0 = CubeDefine.FACES[CubeDefine.BLOCKS_FACES[i][0]];
+    const f1 = CubeDefine.FACES[CubeDefine.BLOCKS_FACES[i][1]];
+    const f2 = CubeDefine.FACES[CubeDefine.BLOCKS_FACES[i][2]];
+    const f01 = vec3Sum(f0, f1);
+    const f12 = vec3Sum(f1, f2);
+    const f20 = vec3Sum(f2, f0);
 
-    //3 outer faces 
+    const innerVertices = [zero, f20, f0, f01, f1, f12, f2];
+    const coordinates = innerVertices.flat();
+    const colors = innerVertices.map(() => background).flat();
+    const indices = CubeDefine.CONNER_INDICES.flat();
+    const aCubeBlock: CubeBlock = {
+        innerFaces: {
+            coordinates,
+            indices,
+            colors,
+        },
+        outerFaces: [] as TexuredMesh[],
+    };
+
     for (let j = 0; j < 3; j++) {
         const face = CubeDefine.FACES[CubeDefine.BLOCKS_FACES[i][j]];
         const face_next = CubeDefine.FACES[CubeDefine.BLOCKS_FACES[i][(j + 1) % 3]];
@@ -56,61 +77,27 @@ for (const i in CubeDefine.BLOCKS) {
         const v2 = face;
         const v3 = face_next.map((v, i) => face[i] + v);
 
-        vertices.push(v0, v1, v2, v3);
+        const vertices = [v0, v1, v2, v3];
+        const xyz = face.indexOf(face.reduce((a, b) => a + b, 0));// the index of non-zero in face
 
-        // TODO divide pieces by texture(face)
-        if (faceTex[CubeDefine.BLOCKS_FACES[i][j]]) {
+        const indices = CubeDefine.QUAD_INDICES.map(x => x); //copy            
+        const uvs = vertices.map(x => x.slice(0, xyz).concat(x.slice(xyz + 1))).flat().map(x => (1 - x) / 2);
 
-            const xyz = face.indexOf(face.reduce((a, b) => a + b, 0));// the index of non-zero in face
+        const texFace: TexuredMesh = {
+            coordinates: vertices.flat(),
+            uvs,
+            indices,
+            textureIdx: CubeDefine.BLOCKS_FACES[i][j],
+        };
 
-            indicesTex.push(...CubeDefine.QUAD_INDICES.map(idx => idx + indexTexOffset));
-            verticesTex.push(v0, v1, v2, v3);
-            uvs.push(...(verticesTex.slice(-4).map(x => x.slice(0, xyz).concat(x.slice(xyz + 1)))));
-            indexTexOffset += 4;
-        } else {
-            indices.push(...CubeDefine.QUAD_INDICES.map(idx => idx + indexOffset));
-        }
-
-        indexOffset += 4;
-        const color = CubeDefine.FACES_COLORS[CubeDefine.BLOCKS_FACES[i][j]];
-        colors.push(...[color, color, color, color]);
+        aCubeBlock.outerFaces.push(texFace);
     }
 
-    // inner faces
-    indices.push(...CubeDefine.CONNER_INDICES.map(idx => idx + indexOffset));
-    vertices.push(zero);
-    for (let j = 0; j < 3; j++) {
-        vertices.push(vertices[4 * j + 1]);
-        vertices.push(vertices[4 * j + 2]);
-    }
-    indexOffset += 3;
-
-    colors.push(...[background, background, background, background, background, background, background]);
-    vertices.forEach((p, j) => vertices[j] = p.map((k, l) => k + v0[l] * outRate));
-    verticesTex.forEach((p, j) => verticesTex[j] = p.map((k, l) => k + v0[l] * outRate));
-
-    const block: bufferdMesh = {
-        idx: parseInt(i),
-        colorVertices: vertices.flat(),
-        colorIndices: indices,
-        colors: colors.flat(),
-        texVertices: verticesTex.flat(),
-        texUvs: uvs.flat().map(x => (1 - x) / 2),
-        texIndices: indicesTex,
-        colorVertexBuffer: null,
-        colorIndexBuffer: null,
-        colorsBuffer: null,
-        texVertexBuffer: null,
-        texIndexBuffer: null,
-        texUvBuffer: null,
-        moveMatrix: null
-    };
-
-    CubeMesh.push(block);
+    cubeBlocks.push(aCubeBlock);
 }
 
 
 
 
-export { CubeDefine, mat4, CubeMesh };
-export type { Mesh, bufferdMesh };
+export { CubeDefine, mat4, cubeBlocks };
+export type { CubeBlock, BufferedCubeBlock };

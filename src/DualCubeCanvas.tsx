@@ -1,8 +1,11 @@
 
 import { useEffect, useRef, useState } from 'react';
-import { mat4, CubeMesh, bufferdMesh, CubeDefine } from './Cube';
+import { mat4, CubeDefine, cubeBlocks, CubeBlock, BufferedCubeBlock } from './Cube';
 import shaders from './shaders';
+
+import orangeURL from './assets/orange.jpg';
 import senpaiURL from './assets/senpai.jpg';
+import foniseURL from './assets/fonise.jpg';
 
 interface glProgram {
     color: number
@@ -66,49 +69,62 @@ function shaderProgramInit(gl: WebGL2RenderingContext, vertSource: string, fragS
     return program;
 }
 
-function blockBufferInit(gl: WebGL2RenderingContext, block: bufferdMesh) {
+function blockBufferInit(gl: WebGL2RenderingContext, block: CubeBlock): BufferedCubeBlock {
+    const outerBuffers = [];
+    for (const face of block.outerFaces) {
+        const coordinatesBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, coordinatesBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(face.coordinates), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+        const indicesBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(face.indices), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+        const uvsBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, uvsBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(face.uvs), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+        outerBuffers.push({
+            coordinatesBuffer,
+            indicesBuffer,
+            uvsBuffer,
+            textureIdx: face.textureIdx,
+        });
+    }
+
     const moveMatrix = mat4.getEye();
 
-    const colorVertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorVertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.colorVertices), gl.STATIC_DRAW);
+    const coordinatesBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, coordinatesBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.innerFaces.coordinates), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    const colorIndexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, colorIndexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.colorIndices), gl.STATIC_DRAW);
+    const indicesBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.innerFaces.indices), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
     const colorsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.colors), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    const texVertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texVertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.texVertices), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    const texIndexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, texIndexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.texIndices), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-    const texUvBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texUvBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.texUvs), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.innerFaces.colors), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
 
-    block.colorVertexBuffer = colorVertexBuffer;
-    block.colorIndexBuffer = colorIndexBuffer;
-    block.colorsBuffer = colorsBuffer;
-    block.texVertexBuffer = texVertexBuffer;
-    block.texIndexBuffer = texIndexBuffer;
-    block.texUvBuffer = texUvBuffer;
-    block.moveMatrix = moveMatrix;
+
+    return {
+        ...block,
+        colorProgramBuffers: {
+            colorsBuffer,
+            indicesBuffer,
+            coordinatesBuffer,
+        },
+        texProgramBuffers: outerBuffers,
+        moveMatrix,
+    };
 }
-
 function textureInit(gl: WebGL2RenderingContext, texid: GLenum, img: HTMLImageElement) {
     function textInit() {
         const texture = gl.createTexture();
@@ -128,6 +144,8 @@ function textureInit(gl: WebGL2RenderingContext, texid: GLenum, img: HTMLImageEl
     }
 }
 
+
+
 const resizeCanvas = (canvas: HTMLCanvasElement) => {
 
     const { width, height } = canvas.getBoundingClientRect();
@@ -140,7 +158,6 @@ const resizeCanvas = (canvas: HTMLCanvasElement) => {
     return false;
 };
 
-const Blocks = CubeMesh.map(x => x);
 function DualCubeCanvas() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -165,13 +182,14 @@ function DualCubeCanvas() {
 
 
 
-    
+
     const dR = useRef(0);
-    const rX = useRef(0.3);
+    const rX = useRef(0.7);
     const rY = useRef(0);
     const rotating_axis = useRef(-1);
     const rotating_reverse = useRef(true);
     useEffect(() => {
+        const Blocks: BufferedCubeBlock[] = [] as BufferedCubeBlock[];
         const canvas = canvasRef.current;
         const gl = canvas?.getContext('webgl2');
 
@@ -179,8 +197,9 @@ function DualCubeCanvas() {
             throw new Error('Failed to get WebGL2 context');
         }
 
-        for (const block of Blocks) {
-            blockBufferInit(gl, block);
+
+        for (let i = 0; i < cubeBlocks.length; i++) {
+            Blocks[i] = blockBufferInit(gl, cubeBlocks[i]);
         }
 
         const colorProgram = shaderProgramInit(gl, shaders.colorVert, shaders.colorFrag);
@@ -225,13 +244,56 @@ function DualCubeCanvas() {
             texSampler,
         };
 
+
         const senpaiIamge = document.createElement('img');
-        senpaiIamge.src = senpaiURL;
+        senpaiIamge.src = orangeURL;
+        senpaiIamge.onload = () => {
 
-        textureInit(gl, gl.TEXTURE0, senpaiIamge);
+            for (let i = 0; i < 6; i++) {
+                const offScreenCanvas = document.createElement('canvas');
+                offScreenCanvas.width = 128;
+                offScreenCanvas.height = 128;
+                // document.body.appendChild(offScreenCanvas);
+                const offScreenCtx = offScreenCanvas.getContext('2d');
+                const color = CubeDefine.FACES_COLORS[i];
+                offScreenCtx!.fillStyle = `rgb(0,0,0)`;
+                offScreenCtx!.fillRect(0, 0, 128, 128);
+
+                offScreenCtx!.beginPath();
+                offScreenCtx!.roundRect(3, 3, 58, 58, 10);
+                offScreenCtx!.roundRect(3, 67, 58, 58, 10);
+                offScreenCtx!.roundRect(67, 3, 58, 58, 10);
+                offScreenCtx!.roundRect(67, 67, 58, 58, 10);
+                offScreenCtx?.closePath();                    
+                offScreenCtx!.clip();
+                
+                if (i == 5) {                    
+                    offScreenCtx!.drawImage(senpaiIamge, 0, 0, 128, 128);
+                } else {
+                    offScreenCtx!.fillStyle = `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`;
+                    offScreenCtx!.fillRect(0, 0, 128, 128);
+                }
+
+                const texture = gl.createTexture();
+                gl.activeTexture(gl.TEXTURE0 + i);
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, offScreenCanvas);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+                gl.generateMipmap(gl.TEXTURE_2D);
+
+            }
+        };
 
 
-        if (!gl) return;
+        // const foniseIamge = document.createElement('img');
+        // foniseIamge.src = foniseURL;
+        // textureInit(gl, gl.TEXTURE0 + 2, foniseIamge);
+
+
+        // textureInit(gl, gl.TEXTURE0 + 5, senpaiIamge);
+
+
 
         // let frameCount = 0;
         let animationFrameId: number;
@@ -258,7 +320,7 @@ function DualCubeCanvas() {
 
                 for (const maplet of CubeDefine.MAPPING[rotating_axis.current]) {
                     const src = rotating_reverse.current ? maplet[0] : maplet[1];
-                    const Block = Blocks[src];
+                    const Block: BufferedCubeBlock = Blocks[src];
 
                     Block.moveMatrix?.rotateX(CubeDefine.FACES[rotating_axis.current][0] * deg);
                     Block.moveMatrix?.rotateY(CubeDefine.FACES[rotating_axis.current][1] * deg);
@@ -302,19 +364,19 @@ function DualCubeCanvas() {
             gl.uniformMatrix4fv(World.program.Vmatrix, false, World.viewMatrix);
             gl.uniformMatrix4fv(World.program.Mmatrix, false, World.moveMatrix);
 
-            for (const idx in Blocks) {
+            for (let idx = 0; idx < 8; idx++) {
                 const block = Blocks[idx];
-                if (block.moveMatrix) {
-                    gl.uniformMatrix4fv(World.program.Lmatrix, false, block.moveMatrix);
-                }
 
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.colorIndexBuffer);
+                gl.uniformMatrix4fv(World.program.Lmatrix, false, block.moveMatrix);
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, block.colorVertexBuffer);
+
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.colorProgramBuffers.indicesBuffer);
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, block.colorProgramBuffers.coordinatesBuffer);
                 gl.vertexAttribPointer(World.program.coord, 3, gl.FLOAT, false, 0, 0);
-                gl.bindBuffer(gl.ARRAY_BUFFER, block.colorsBuffer);
+                gl.bindBuffer(gl.ARRAY_BUFFER, block.colorProgramBuffers.colorsBuffer);
                 gl.vertexAttribPointer(World.program.color, 3, gl.FLOAT, false, 0, 0);
-                gl.drawElements(gl.TRIANGLES, block.colorIndices.length, gl.UNSIGNED_SHORT, 0);
+                gl.drawElements(gl.TRIANGLES, block.innerFaces.indices.length, gl.UNSIGNED_SHORT, 0);
             }
 
             //draw texture part
@@ -322,20 +384,20 @@ function DualCubeCanvas() {
             gl.uniformMatrix4fv(World.program.texPmatrix, false, World.projectMatrix);
             gl.uniformMatrix4fv(World.program.texVmatrix, false, World.viewMatrix);
             gl.uniformMatrix4fv(World.program.texMmatrix, false, World.moveMatrix);
-            gl.activeTexture(gl.TEXTURE0);
-            for (const idx in Blocks) {
-                const block = Blocks[idx];
-                if (block.moveMatrix) {
-                    gl.uniformMatrix4fv(World.program.texLmatrix, false, block.moveMatrix);
-                }
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.texIndexBuffer);
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, block.texVertexBuffer);
-                gl.vertexAttribPointer(World.program.texCoord, 3, gl.FLOAT, false, 0, 0);
-                gl.bindBuffer(gl.ARRAY_BUFFER, block.texUvBuffer);
-                gl.vertexAttribPointer(World.program.texUvs, 2, gl.FLOAT, false, 0, 0);
-                gl.uniform1i(World.program.texSampler, 0);
-                gl.drawElements(gl.TRIANGLES, block.texIndices.length, gl.UNSIGNED_SHORT, 0);
+            for (let idx = 0; idx < 8; idx++) {
+                const block = Blocks[idx];
+                gl.uniformMatrix4fv(World.program.texLmatrix, false, block.moveMatrix);
+                for (const texBuffer of block.texProgramBuffers) {
+                    // gl.activeTexture(gl.TEXTURE0 + 2);
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, texBuffer.indicesBuffer);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer.coordinatesBuffer);
+                    gl.vertexAttribPointer(World.program.texCoord, 3, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer.uvsBuffer);
+                    gl.vertexAttribPointer(World.program.texUvs, 2, gl.FLOAT, false, 0, 0);
+                    gl.uniform1i(World.program.texSampler, texBuffer.textureIdx);
+                    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+                }
             }
 
 
