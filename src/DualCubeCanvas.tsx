@@ -69,43 +69,43 @@ function shaderProgramInit(gl: WebGL2RenderingContext, vertSource: string, fragS
 function blockBufferInit(gl: WebGL2RenderingContext, block: bufferdMesh) {
     const moveMatrix = mat4.getEye();
 
-    const vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.vertices), gl.STATIC_DRAW);
+    const colorVertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorVertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.colorVertices), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    const indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.indices), gl.STATIC_DRAW);
+    const colorIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, colorIndexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.colorIndices), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-    const colorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    const colorsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.colors), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    const vertexBuffer2 = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer2);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.verticesTex), gl.STATIC_DRAW);
+    const texVertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texVertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.texVertices), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    const indexBuffer2 = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer2);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.indicesTex), gl.STATIC_DRAW);
+    const texIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, texIndexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(block.texIndices), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-    const uvBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.uvs), gl.STATIC_DRAW);
+    const texUvBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texUvBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(block.texUvs), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
 
-    block.vertexBuffer = vertexBuffer;
-    block.indexBuffer = indexBuffer;
-    block.colorBuffer = colorBuffer;
-    block.vertexBuffer2 = vertexBuffer2;
-    block.indexBuffer2 = indexBuffer2;
-    block.uvBuffer = uvBuffer;
+    block.colorVertexBuffer = colorVertexBuffer;
+    block.colorIndexBuffer = colorIndexBuffer;
+    block.colorsBuffer = colorsBuffer;
+    block.texVertexBuffer = texVertexBuffer;
+    block.texIndexBuffer = texIndexBuffer;
+    block.texUvBuffer = texUvBuffer;
     block.moveMatrix = moveMatrix;
 }
 
@@ -308,13 +308,13 @@ function DualCubeCanvas() {
                     gl.uniformMatrix4fv(World.program.Lmatrix, false, block.moveMatrix);
                 }
 
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.indexBuffer);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.colorIndexBuffer);
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, block.vertexBuffer);
+                gl.bindBuffer(gl.ARRAY_BUFFER, block.colorVertexBuffer);
                 gl.vertexAttribPointer(World.program.coord, 3, gl.FLOAT, false, 0, 0);
-                gl.bindBuffer(gl.ARRAY_BUFFER, block.colorBuffer);
+                gl.bindBuffer(gl.ARRAY_BUFFER, block.colorsBuffer);
                 gl.vertexAttribPointer(World.program.color, 3, gl.FLOAT, false, 0, 0);
-                gl.drawElements(gl.TRIANGLES, block.indices.length, gl.UNSIGNED_SHORT, 0);
+                gl.drawElements(gl.TRIANGLES, block.colorIndices.length, gl.UNSIGNED_SHORT, 0);
             }
 
             //draw texture part
@@ -328,14 +328,14 @@ function DualCubeCanvas() {
                 if (block.moveMatrix) {
                     gl.uniformMatrix4fv(World.program.texLmatrix, false, block.moveMatrix);
                 }
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.indexBuffer2);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.texIndexBuffer);
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, block.vertexBuffer2);
+                gl.bindBuffer(gl.ARRAY_BUFFER, block.texVertexBuffer);
                 gl.vertexAttribPointer(World.program.texCoord, 3, gl.FLOAT, false, 0, 0);
-                gl.bindBuffer(gl.ARRAY_BUFFER, block.uvBuffer);
+                gl.bindBuffer(gl.ARRAY_BUFFER, block.texUvBuffer);
                 gl.vertexAttribPointer(World.program.texUvs, 2, gl.FLOAT, false, 0, 0);
                 gl.uniform1i(World.program.texSampler, 0);
-                gl.drawElements(gl.TRIANGLES, block.indicesTex.length, gl.UNSIGNED_SHORT, 0);
+                gl.drawElements(gl.TRIANGLES, block.texIndices.length, gl.UNSIGNED_SHORT, 0);
             }
 
 

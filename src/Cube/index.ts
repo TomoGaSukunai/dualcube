@@ -2,25 +2,26 @@ import CubeDefine from "./define";
 import mat4 from "./math";
 
 interface Mesh {
-    vertices: number[];
-    indices: number[];
+    colorVertices: number[];
+    colorIndices: number[];
     colors: number[];
-    verticesTex: number[];
-    uvs: number[];
-    indicesTex: number[];
+    texVertices: number[];
+    texUvs: number[];
+    texIndices: number[];
     idx: number;
 }
+
 interface bufferdMesh extends Mesh {
-    vertexBuffer: WebGLBuffer | null,
-    indexBuffer: WebGLBuffer | null,
-    colorBuffer: WebGLBuffer | null,
-    vertexBuffer2: WebGLBuffer | null,
-    indexBuffer2: WebGLBuffer | null,
-    uvBuffer: WebGLBuffer | null,
+    colorVertexBuffer: WebGLBuffer | null,
+    colorIndexBuffer: WebGLBuffer | null,
+    colorsBuffer: WebGLBuffer | null,
+    texVertexBuffer: WebGLBuffer | null,
+    texIndexBuffer: WebGLBuffer | null,
+    texUvBuffer: WebGLBuffer | null,
     moveMatrix: mat4 | null,
 }
 
-const grey = [.8, .8, .8];
+const background = [.8, .8, .8];
 
 
 const CubeMesh: bufferdMesh[] = [];
@@ -32,6 +33,8 @@ for (const i in CubeDefine.BLOCKS) {
     const vertices = [];
     const indices = [];
     const colors = [];
+
+
 
     const verticesTex = [];
     const uvs = [];
@@ -55,7 +58,7 @@ for (const i in CubeDefine.BLOCKS) {
 
         vertices.push(v0, v1, v2, v3);
 
-
+        // TODO divide pieces by texture(face)
         if (faceTex[CubeDefine.BLOCKS_FACES[i][j]]) {
 
             const xyz = face.indexOf(face.reduce((a, b) => a + b, 0));// the index of non-zero in face
@@ -82,24 +85,24 @@ for (const i in CubeDefine.BLOCKS) {
     }
     indexOffset += 3;
 
-    colors.push(...[grey, grey, grey, grey, grey, grey, grey]);
+    colors.push(...[background, background, background, background, background, background, background]);
     vertices.forEach((p, j) => vertices[j] = p.map((k, l) => k + v0[l] * outRate));
     verticesTex.forEach((p, j) => verticesTex[j] = p.map((k, l) => k + v0[l] * outRate));
 
     const block: bufferdMesh = {
         idx: parseInt(i),
-        vertices: vertices.flat(),
-        indices: indices,
+        colorVertices: vertices.flat(),
+        colorIndices: indices,
         colors: colors.flat(),
-        verticesTex: verticesTex.flat(),
-        uvs: uvs.flat().map(x => (1 - x) / 2),
-        indicesTex: indicesTex,
-        vertexBuffer: null,
-        indexBuffer: null,
-        colorBuffer: null,
-        vertexBuffer2: null,
-        indexBuffer2: null,
-        uvBuffer: null,
+        texVertices: verticesTex.flat(),
+        texUvs: uvs.flat().map(x => (1 - x) / 2),
+        texIndices: indicesTex,
+        colorVertexBuffer: null,
+        colorIndexBuffer: null,
+        colorsBuffer: null,
+        texVertexBuffer: null,
+        texIndexBuffer: null,
+        texUvBuffer: null,
         moveMatrix: null
     };
 
