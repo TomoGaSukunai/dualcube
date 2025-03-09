@@ -152,14 +152,14 @@ function DualCubeCanvas() {
 
     // test canvasRef change
 
-    let refChange = 0;
-    let refCur = canvasRef.current;
+    const refChange = useRef(0);
+    const refCur = useRef(canvasRef.current);
     useEffect(() => {
-        if (refCur !== canvasRef.current) {
-            refCur = canvasRef.current;
+        if (refCur.current !== canvasRef.current) {
+            refCur.current = canvasRef.current;
 
-            refChange++;
-            console.log(refChange);
+            refChange.current++;
+            console.log(refChange.current);
         }
     }, [canvasRef]);
 
@@ -233,11 +233,11 @@ function DualCubeCanvas() {
 
         if (!gl) return;
 
-        let frameCount = 0;
+        // let frameCount = 0;
         let animationFrameId: number;
 
         const render = () => {
-            frameCount++;
+            // frameCount++;
             // if (frameCount % 100 == 0) {
             //     console.log(frameCount);
             // }
