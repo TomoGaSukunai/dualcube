@@ -3,9 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { mat4, CubeDefine, cubeBlocks, CubeBlock, BufferedCubeBlock } from './Cube';
 import shaders from './shaders';
 
-import orangeURL from './assets/orange.jpg';
-import senpaiURL from './assets/senpai.jpg';
-import foniseURL from './assets/fonise.jpg';
+import o0 from './assets/o1.jpg';
+import o1 from './assets/o1.jpg';
+import o2 from './assets/o2.jpg';
+import o3 from './assets/o3.jpg';
+import o4 from './assets/o4.jpg';
+import o5 from './assets/o5.jpg';
 
 interface glProgram {
     color: number
@@ -125,26 +128,15 @@ function blockBufferInit(gl: WebGL2RenderingContext, block: CubeBlock): Buffered
         moveMatrix,
     };
 }
-function textureInit(gl: WebGL2RenderingContext, texid: GLenum, img: HTMLImageElement) {
-    function textInit() {
-        const texture = gl.createTexture();
-        gl.activeTexture(texid);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-        gl.generateMipmap(gl.TEXTURE_2D);
-    }
 
-
-    if (img.complete) {
-        textInit();
-    } else {
-        img.onload = textInit;
-    }
-}
-
-
+const loadImage = (src: string) => {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+};
 
 const resizeCanvas = (canvas: HTMLCanvasElement) => {
 
@@ -161,14 +153,10 @@ const resizeCanvas = (canvas: HTMLCanvasElement) => {
 function DualCubeCanvas() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-
     //status
     const [status, setStatus] = useState<number[]>([0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0]);
 
-
-
     // test canvasRef change
-
     const refChange = useRef(0);
     const refCur = useRef(canvasRef.current);
     useEffect(() => {
@@ -180,12 +168,9 @@ function DualCubeCanvas() {
         }
     }, [canvasRef]);
 
-
-
-
     const dR = useRef(0);
     const rX = useRef(0.7);
-    const rY = useRef(0);
+    const rY = useRef(0.4);
     const rotating_axis = useRef(-1);
     const rotating_reverse = useRef(true);
     useEffect(() => {
@@ -213,7 +198,6 @@ function DualCubeCanvas() {
         const Lmatrix = gl.getUniformLocation(colorProgram, 'Lmatrix');
 
 
-
         const texProgram = shaderProgramInit(gl, shaders.texVert, shaders.texFrag);
         const texCoord = gl.getAttribLocation(texProgram, 'coordinates');
         gl.enableVertexAttribArray(texCoord);
@@ -226,14 +210,13 @@ function DualCubeCanvas() {
         const texSampler = gl.getUniformLocation(texProgram, 'uSampler');
 
         World.program = {
-
+            colorProgram,
             color,
             coord,
             Lmatrix,
             Mmatrix,
             Vmatrix,
-            Pmatrix,
-            colorProgram,
+            Pmatrix,            
             texProgram,
             texCoord,
             texUvs,
@@ -244,46 +227,47 @@ function DualCubeCanvas() {
             texSampler,
         };
 
+        const border = 1;
+        const width = 64 - border - border;
+        const round = 4;
+        // const images = [o0,o1,o2,o3,o4,o5];
+        Promise.all([loadImage(o0), loadImage(o1), loadImage(o2), loadImage(o3), loadImage(o4), loadImage(o5)])
+            .then((imgs: HTMLImageElement[]) => {
+                for (let i = 0; i < 6; i++) {
+                    const offScreenCanvas = document.createElement('canvas');
+                    offScreenCanvas.width = 128;
+                    offScreenCanvas.height = 128;
+                    // document.body.appendChild(offScreenCanvas);
+                    const offScreenCtx = offScreenCanvas.getContext('2d');
 
-        const senpaiIamge = document.createElement('img');
-        senpaiIamge.src = orangeURL;
-        senpaiIamge.onload = () => {
-
-            for (let i = 0; i < 6; i++) {
-                const offScreenCanvas = document.createElement('canvas');
-                offScreenCanvas.width = 128;
-                offScreenCanvas.height = 128;
-                // document.body.appendChild(offScreenCanvas);
-                const offScreenCtx = offScreenCanvas.getContext('2d');
-                const color = CubeDefine.FACES_COLORS[i];
-                offScreenCtx!.fillStyle = `rgb(0,0,0)`;
-                offScreenCtx!.fillRect(0, 0, 128, 128);
-
-                offScreenCtx!.beginPath();
-                offScreenCtx!.roundRect(3, 3, 58, 58, 10);
-                offScreenCtx!.roundRect(3, 67, 58, 58, 10);
-                offScreenCtx!.roundRect(67, 3, 58, 58, 10);
-                offScreenCtx!.roundRect(67, 67, 58, 58, 10);
-                offScreenCtx?.closePath();                    
-                offScreenCtx!.clip();
-                
-                if (i == 5) {                    
-                    offScreenCtx!.drawImage(senpaiIamge, 0, 0, 128, 128);
-                } else {
-                    offScreenCtx!.fillStyle = `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`;
+                    offScreenCtx!.fillStyle = `rgb(0,0,0)`;
                     offScreenCtx!.fillRect(0, 0, 128, 128);
+
+                    offScreenCtx!.beginPath();
+                    offScreenCtx!.roundRect(border, border, width, width, round);
+                    offScreenCtx!.roundRect(border + 64, border, width, width, round);
+                    offScreenCtx!.roundRect(border, border + 64, width, width, round);
+                    offScreenCtx!.roundRect(border + 64, border + 64, width, width, round);
+
+                    offScreenCtx!.closePath();
+                    offScreenCtx!.clip();
+                    
+                    offScreenCtx!.drawImage(imgs[i], 0, 0, 128, 128);
+                    // const color = CubeDefine.FACES_COLORS[i];
+                    // offScreenCtx!.fillStyle = `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`;
+                    // offScreenCtx!.fillRect(0, 0, 128, 128);
+
+
+                    const texture = gl.createTexture();
+                    gl.activeTexture(gl.TEXTURE0 + i);
+                    gl.bindTexture(gl.TEXTURE_2D, texture);
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, offScreenCanvas);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+                    gl.generateMipmap(gl.TEXTURE_2D);
+
                 }
-
-                const texture = gl.createTexture();
-                gl.activeTexture(gl.TEXTURE0 + i);
-                gl.bindTexture(gl.TEXTURE_2D, texture);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, offScreenCanvas);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-                gl.generateMipmap(gl.TEXTURE_2D);
-
-            }
-        };
+            });
 
 
         // const foniseIamge = document.createElement('img');
@@ -310,7 +294,7 @@ function DualCubeCanvas() {
             World.moveMatrix.rotateY(rY.current);
             World.moveMatrix.rotateX(rX.current);
 
-            rY.current += 0.001 * deltaTime;
+            // rY.current += 0.001 * deltaTime;
 
 
             if (rotating_axis.current != -1) {
@@ -369,7 +353,6 @@ function DualCubeCanvas() {
 
                 gl.uniformMatrix4fv(World.program.Lmatrix, false, block.moveMatrix);
 
-
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.colorProgramBuffers.indicesBuffer);
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, block.colorProgramBuffers.coordinatesBuffer);
@@ -401,7 +384,6 @@ function DualCubeCanvas() {
             }
 
 
-
             World.moveMatrix = mat4.getEye();
 
             animationFrameId = requestAnimationFrame(render);
@@ -431,6 +413,13 @@ function DualCubeCanvas() {
         setStatus(next_status);
     };
 
+    const handleViewRotate = (dx: number, dy: number) => {
+        rX.current += dy * 1;
+        rY.current += dx * 1;
+        rX.current = Math.min(rX.current, Math.PI / 2);
+        rX.current = Math.max(rX.current, -Math.PI / 2);
+    };
+
     return <>
         <canvas ref={canvasRef} />
         <button onClick={() => handleRotate(0, true)}>0</button>
@@ -438,13 +427,17 @@ function DualCubeCanvas() {
         <button onClick={() => handleRotate(2, true)}>2</button>
         <button onClick={() => handleRotate(3, true)}>3</button>
         <button onClick={() => handleRotate(4, true)}>4</button>
-        <button onClick={() => handleRotate(5, true)}>5</button>
+        <button onClick={() => handleRotate(5, true)}>5</button>        
         <button onClick={() => handleRotate(0, false)}>0</button>
         <button onClick={() => handleRotate(1, false)}>1</button>
         <button onClick={() => handleRotate(2, false)}>2</button>
         <button onClick={() => handleRotate(3, false)}>3</button>
         <button onClick={() => handleRotate(4, false)}>4</button>
         <button onClick={() => handleRotate(5, false)}>5</button>
+        <button onClick={() => handleViewRotate(0, -0.1)}>↑</button>
+        <button onClick={() => handleViewRotate(0, 0.1)}>↓</button>
+        <button onClick={() => handleViewRotate(-0.1, 0)}>←</button>
+        <button onClick={() => handleViewRotate(0.1, 0)}>→</button>
     </>;
 
 }
