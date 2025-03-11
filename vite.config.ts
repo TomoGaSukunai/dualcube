@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
-import { viteCommonjs } from '@originjs/vite-plugin-commonjs';
 import react from '@vitejs/plugin-react';
+import { viteCommonjs } from '@originjs/vite-plugin-commonjs';
 
 
 // https://vite.dev/config/
@@ -13,13 +13,6 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ""),
       }
     }
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
-    },
   },
   plugins: [react(), viteCommonjs()],
 });
