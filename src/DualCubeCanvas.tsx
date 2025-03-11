@@ -9,6 +9,7 @@ import o2 from './assets/o2.jpg';
 import o3 from './assets/o3.jpg';
 import o4 from './assets/o4.jpg';
 import o5 from './assets/o5.jpg';
+import ApiDom from './bili-api';
 
 interface glProgram {
     color: number
@@ -216,7 +217,7 @@ function DualCubeCanvas() {
             Lmatrix,
             Mmatrix,
             Vmatrix,
-            Pmatrix,            
+            Pmatrix,
             texProgram,
             texCoord,
             texUvs,
@@ -251,7 +252,7 @@ function DualCubeCanvas() {
 
                     offScreenCtx!.closePath();
                     offScreenCtx!.clip();
-                    
+
                     offScreenCtx!.drawImage(imgs[i], 0, 0, 128, 128);
                     // const color = CubeDefine.FACES_COLORS[i];
                     // offScreenCtx!.fillStyle = `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`;
@@ -427,7 +428,7 @@ function DualCubeCanvas() {
         <button onClick={() => handleRotate(2, true)}>2</button>
         <button onClick={() => handleRotate(3, true)}>3</button>
         <button onClick={() => handleRotate(4, true)}>4</button>
-        <button onClick={() => handleRotate(5, true)}>5</button>        
+        <button onClick={() => handleRotate(5, true)}>5</button>
         <button onClick={() => handleRotate(0, false)}>0</button>
         <button onClick={() => handleRotate(1, false)}>1</button>
         <button onClick={() => handleRotate(2, false)}>2</button>
@@ -438,6 +439,7 @@ function DualCubeCanvas() {
         <button onClick={() => handleViewRotate(0, 0.1)}>↓</button>
         <button onClick={() => handleViewRotate(-0.1, 0)}>←</button>
         <button onClick={() => handleViewRotate(0.1, 0)}>→</button>
+        <ApiDom callback={i => handleRotate(i % 6, i > 5)} />
     </>;
 
 }

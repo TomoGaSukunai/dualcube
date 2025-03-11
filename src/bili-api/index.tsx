@@ -1,19 +1,19 @@
 import axios from "axios";
 import { createSocket, destroySocket } from "./socket";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 const api = axios.create({
     baseURL: "/api"
 });
 
-function ApiDom() {
+function ApiDom({ callback }: { callback: (i: number) => void }) {
     // 替换你的秘钥
     // 替换你的主播身份码
     const codeId = useRef<HTMLInputElement | null>(null);
     // 替换你的app应用 [这里测试为互动游戏]
     const appId = useRef<HTMLInputElement | null>(null);
     // [向 node server请求接口后自动返回]
-    const gameId = useRef<HTMLInputElement | null>(null);
+    const gameId = useRef<string | null>(null);
     // v2改为server response 服务器返回websocket信息，而非手动获取
     const authBody = useRef("");
     const wssLinks = useRef([]);
@@ -116,14 +116,50 @@ function ApiDom() {
             });
     };
 
+    interface Message{
+        cmd: string,
+        data:{
+            uname: string,
+            uid: number,
+            open_id: string,
+            uface: string,
+            timestamp: number,
+            room_id: number,
+            msg: string,
+            msg_id: string,
+            guard_level: number,
+            fans_medal_wearing_status: boolean,
+            fans_medal_name: string,
+            fans_medal_level: number,
+            emojo_img_url: string,
+            dm_type: number, // 0 for commen 1 for emoji
+            glory_level: number, 
+            reply_open_id: string,
+            reply_uname: string,
+            is_admin: number          
+            
+        }
+    }
 
-    let ws:unknown = null;
+    const onMessage = (res:unknown) => {
+        const msg = res as Message;
+        if (msg.cmd === "LIVE_OPEN_PLATFORM_DM" ){
+            if(msg.data.dm_type === 0){
+                const v  = parseInt(msg.data.msg)    ;
+                if(v >= 0 && v <= 12){
+                    callback(v);
+                }
+            }            
+        }
+    };
+
+    let ws: unknown = null;
     /**
      * 测试创建长长连接接口
      */
     const handleCreateSocket = () => {
         if (authBody.current && wssLinks.current) {
-            ws = createSocket(authBody.current, wssLinks.current);
+            ws = createSocket(authBody.current, wssLinks.current, onMessage );
         }
     };
 
@@ -137,6 +173,14 @@ function ApiDom() {
         }
         console.log("-----长连接销毁成功-----");
     };
+
+
+    useEffect(() => {
+        window.addEventListener("beforeunload", handleCreateSocket);
+        return () => {
+            window.removeEventListener("beforeunload", handleDestroySocket);
+        };
+    });
 
 
     return (

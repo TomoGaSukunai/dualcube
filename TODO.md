@@ -1,8 +1,7 @@
-# React 
-[ ] handle event within react
-[ ] react controller UI
+# TODO 
 
-# WebGL
-[ ] custom math
-[ ] gl init
+## WebSocketController
+ [ ] start game/wsslink with url params 
+ [ ]
+ 
 
