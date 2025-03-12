@@ -421,6 +421,10 @@ function DualCubeCanvas() {
         rX.current = Math.max(rX.current, -Math.PI / 2);
     };
 
+    const handleRotateCommand = ({ name, rotate }: { name: string, rotate: number }) => {
+        handleRotate(rotate % 6, rotate > 5);
+    };
+
     return <>
         <canvas ref={canvasRef} />
         <button onClick={() => handleRotate(0, true)}>0</button>
@@ -439,7 +443,7 @@ function DualCubeCanvas() {
         <button onClick={() => handleViewRotate(0, 0.1)}>↓</button>
         <button onClick={() => handleViewRotate(-0.1, 0)}>←</button>
         <button onClick={() => handleViewRotate(0.1, 0)}>→</button>
-        <ApiDom callback={i => handleRotate(i % 6, i > 5)} />
+        <ApiDom callback={cmd => handleRotateCommand(cmd)} />
     </>;
 
 }

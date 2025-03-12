@@ -7,7 +7,7 @@ let ws: DanmakuWebSocket | null;
  * @param authBody
  * @param wssLinks
  */
-function createSocket(authBody: string, wssLinks: string[], messageCallback: ((res:any) => void) | null) {
+function createSocket(authBody: string, wssLinks: string[], messageCallback: ((res:unknown) => void) | null) {
     const opt = {
         ...getWebSocketConfig(authBody, wssLinks),
         // 收到消息,

@@ -6,7 +6,7 @@ const api = axios.create({
     baseURL: "/api"
 });
 
-function ApiDom({ callback }: { callback: (i: number) => void }) {
+function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rotate: number }) => void }) {
     // 替换你的秘钥
     // 替换你的主播身份码
     const codeId = useRef<HTMLInputElement | null>(null);
@@ -116,9 +116,9 @@ function ApiDom({ callback }: { callback: (i: number) => void }) {
             });
     };
 
-    interface Message{
+    interface Message {
         cmd: string,
-        data:{
+        data: {
             uname: string,
             uid: number,
             open_id: string,
@@ -133,23 +133,26 @@ function ApiDom({ callback }: { callback: (i: number) => void }) {
             fans_medal_level: number,
             emojo_img_url: string,
             dm_type: number, // 0 for commen 1 for emoji
-            glory_level: number, 
+            glory_level: number,
             reply_open_id: string,
             reply_uname: string,
-            is_admin: number          
-            
+            is_admin: number
+
         }
     }
 
-    const onMessage = (res:unknown) => {
+    const onMessage = (res: unknown) => {
         const msg = res as Message;
-        if (msg.cmd === "LIVE_OPEN_PLATFORM_DM" ){
-            if(msg.data.dm_type === 0){
-                const v  = parseInt(msg.data.msg)    ;
-                if(v >= 0 && v <= 12){
-                    callback(v);
+        if (msg.cmd === "LIVE_OPEN_PLATFORM_DM") {
+            if (msg.data.dm_type === 0) {
+                const rotate = parseInt(msg.data.msg);
+                if (rotate >= 0 && rotate <= 12) {
+                    callback({
+                        name: msg.data.uname,
+                        rotate,
+                    });
                 }
-            }            
+            }
         }
     };
 
@@ -159,7 +162,7 @@ function ApiDom({ callback }: { callback: (i: number) => void }) {
      */
     const handleCreateSocket = () => {
         if (authBody.current && wssLinks.current) {
-            ws = createSocket(authBody.current, wssLinks.current, onMessage );
+            ws = createSocket(authBody.current, wssLinks.current, onMessage);
         }
     };
 
