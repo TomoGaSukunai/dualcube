@@ -12,13 +12,14 @@ import o5 from './assets/o5.jpg';
 import ApiDom from './bili-api';
 
 interface glProgram {
+    colorProgram: WebGLProgram | null,
     color: number
     coord: number
     Lmatrix: WebGLUniformLocation | null
     Mmatrix: WebGLUniformLocation | null
     Vmatrix: WebGLUniformLocation | null
     Pmatrix: WebGLUniformLocation | null
-    colorProgram: WebGLProgram | null,
+
     texProgram: WebGLProgram | null,
     texCoord: number
     texUvs: number
@@ -27,6 +28,15 @@ interface glProgram {
     texMmatrix: WebGLUniformLocation | null
     texLmatrix: WebGLUniformLocation | null
     texSampler: WebGLUniformLocation | null
+
+    textProgram: WebGLProgram | null,
+    textCoord: number
+    textUvs: number
+    textPmatrix: WebGLUniformLocation | null
+    textVmatrix: WebGLUniformLocation | null
+    textMmatrix: WebGLUniformLocation | null
+    textSampler: WebGLUniformLocation | null
+    textArchor: WebGLUniformLocation | null
 }
 
 
@@ -210,6 +220,22 @@ function DualCubeCanvas() {
         const texLmatrix = gl.getUniformLocation(texProgram, 'Lmatrix');
         const texSampler = gl.getUniformLocation(texProgram, 'uSampler');
 
+        const textProgram = shaderProgramInit(gl, shaders.textVert, shaders.textFrag);
+        const textCoord = gl.getAttribLocation(textProgram, 'coordinates');
+        gl.enableVertexAttribArray(textCoord);
+        const textUvs = gl.getAttribLocation(textProgram, 'uvs');
+        gl.enableVertexAttribArray(textUvs);
+        const textArchor = gl.getUniformLocation(textProgram, 'archor');
+        const textPmatrix = gl.getUniformLocation(textProgram, 'Pmatrix');
+        const textVmatrix = gl.getUniformLocation(textProgram, 'Vmatrix');
+        const textMmatrix = gl.getUniformLocation(textProgram, 'Mmatrix');
+        const textSampler = gl.getUniformLocation(textProgram, 'uSampler');
+
+
+
+
+
+
         World.program = {
             colorProgram,
             color,
@@ -226,6 +252,14 @@ function DualCubeCanvas() {
             texMmatrix,
             texLmatrix,
             texSampler,
+            textProgram,
+            textCoord,
+            textUvs,
+            textPmatrix,
+            textVmatrix,
+            textMmatrix,
+            textSampler,
+            textArchor,
         };
 
         const border = 1;
@@ -278,6 +312,52 @@ function DualCubeCanvas() {
 
         // textureInit(gl, gl.TEXTURE0 + 5, senpaiIamge);
 
+        const textInfos = ['左', '下', '前', '右', '上', '后'].map((face, i) => {
+            const offScreenCanvas = document.createElement('canvas');
+            offScreenCanvas.width = 32;
+            offScreenCanvas.height = 32;
+            const offScreenCtx = offScreenCanvas.getContext('2d');
+            offScreenCtx!.fillStyle = `rgb(0,0,0,0)`;
+            offScreenCtx!.fillRect(0, 0, 32, 32);
+            offScreenCtx!.font = '24px Arial';
+            offScreenCtx!.textAlign = 'center';
+            offScreenCtx!.textBaseline = 'middle';
+            offScreenCtx!.fillStyle = `rgb(255, 255, 255)`;
+            offScreenCtx!.fillText(face, 16, 16);
+
+            const texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offScreenCanvas);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+            gl.generateMipmap(gl.TEXTURE_2D);
+
+            const coordBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, coordBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                -0.5, -0.5,
+                0.5, -0.5,
+                -0.5, 0.5,
+                0.5, 0.5,
+            ]), gl.STATIC_DRAW);
+
+            const uvsBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, uvsBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                0, 1,
+                0, 0,
+                1, 1,
+                1, 0,
+            ]), gl.STATIC_DRAW);
+
+
+            return {
+                texture,
+                coordBuffer,
+                uvsBuffer,
+                archor: CubeDefine.FACES[i].map(x => x * 2.5),
+            };
+        });
 
 
         // let frameCount = 0;
@@ -385,6 +465,27 @@ function DualCubeCanvas() {
             }
 
 
+            gl.enable(gl.DEPTH_TEST);
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            //draw text part
+            gl.useProgram(World.program.textProgram);
+            gl.uniformMatrix4fv(World.program.textPmatrix, false, World.projectMatrix);
+            gl.uniformMatrix4fv(World.program.textVmatrix, false, World.viewMatrix);
+            gl.uniformMatrix4fv(World.program.textMmatrix, false, World.moveMatrix);
+            for (const info of textInfos) {                
+                gl.bindBuffer(gl.ARRAY_BUFFER, info.coordBuffer);
+                gl.vertexAttribPointer(World.program.textCoord, 2, gl.FLOAT, false, 0, 0);
+                gl.bindBuffer(gl.ARRAY_BUFFER, info.uvsBuffer);
+                gl.vertexAttribPointer(World.program.textUvs, 2, gl.FLOAT, false, 0, 0);
+                gl.uniform3fv(World.program.textArchor, info.archor);
+                gl.activeTexture(gl.TEXTURE0 + 6);
+                gl.bindTexture(gl.TEXTURE_2D, info.texture);
+                gl.uniform1i(World.program.textSampler, 6);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            }
+
+
             World.moveMatrix = mat4.getEye();
 
             animationFrameId = requestAnimationFrame(render);
@@ -427,18 +528,18 @@ function DualCubeCanvas() {
 
     return <>
         <canvas ref={canvasRef} />
-        <button onClick={() => handleRotate(0, true)}>0</button>
-        <button onClick={() => handleRotate(1, true)}>1</button>
-        <button onClick={() => handleRotate(2, true)}>2</button>
-        <button onClick={() => handleRotate(3, true)}>3</button>
-        <button onClick={() => handleRotate(4, true)}>4</button>
-        <button onClick={() => handleRotate(5, true)}>5</button>
-        <button onClick={() => handleRotate(0, false)}>0</button>
-        <button onClick={() => handleRotate(1, false)}>1</button>
-        <button onClick={() => handleRotate(2, false)}>2</button>
-        <button onClick={() => handleRotate(3, false)}>3</button>
-        <button onClick={() => handleRotate(4, false)}>4</button>
-        <button onClick={() => handleRotate(5, false)}>5</button>
+        <button onClick={() => handleRotate(0, true)}>左顺</button>
+        <button onClick={() => handleRotate(1, true)}>下顺</button>
+        <button onClick={() => handleRotate(2, true)}>前顺</button>
+        <button onClick={() => handleRotate(3, true)}>右顺</button>
+        <button onClick={() => handleRotate(4, true)}>上顺</button>
+        <button onClick={() => handleRotate(5, true)}>后顺</button>
+        <button onClick={() => handleRotate(0, false)}>左逆</button>
+        <button onClick={() => handleRotate(1, false)}>下逆</button>
+        <button onClick={() => handleRotate(2, false)}>前逆</button>
+        <button onClick={() => handleRotate(3, false)}>右逆</button>
+        <button onClick={() => handleRotate(4, false)}>上逆</button>
+        <button onClick={() => handleRotate(5, false)}>右逆</button>
         <button onClick={() => handleViewRotate(0, -0.1)}>↑</button>
         <button onClick={() => handleViewRotate(0, 0.1)}>↓</button>
         <button onClick={() => handleViewRotate(-0.1, 0)}>←</button>
