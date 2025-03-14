@@ -10,14 +10,18 @@ let ws: DanmakuWebSocket | null;
 function createSocket(authBody: string, wssLinks: string[], messageCallback: ((res:unknown) => void) | null) {
     const opt = {
         ...getWebSocketConfig(authBody, wssLinks),
+
         // 收到消息,
         onReceivedMessage: (res: unknown) => {
             console.log(res);
             messageCallback!(res);
         },
+
         // 收到心跳处理回调
         onHeartBeatReply: (data: unknown) => console.log("收到心跳处理回调:", data),
+        
         onError: (data: unknown) => console.log("error", data),
+
         onListConnectError: () => {
             console.log("list connect error");
             destroySocket();

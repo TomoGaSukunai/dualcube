@@ -11,7 +11,7 @@ function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rot
     // 替换你的主播身份码
     const codeId = useRef<HTMLInputElement | null>(null);
     // 替换你的app应用 [这里测试为互动游戏]
-    const appId = useRef<HTMLInputElement | null>(null);
+    const appId = 1743849192865;
     // [向 node server请求接口后自动返回]
     const gameId = useRef<string | null>(null);
     // v2改为server response 服务器返回websocket信息，而非手动获取
@@ -21,21 +21,6 @@ function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rot
     const heartBeatTimer = useRef<NodeJS.Timer>(null);
     // be ready
     clearInterval(heartBeatTimer.current as NodeJS.Timeout);
-    /**
-     * 测试请求鉴权接口
-     */
-    const getAuth = () => {
-        api.post("/getAuth", {
-        })
-            .then(({ data }) => {
-                console.log("-----鉴权成功-----");
-                console.log("返回：", data);
-            })
-            .catch((err) => {
-                console.log("-----鉴权失败-----");
-                console.log(err);
-            });
-    };
 
     const heartBeatThis = (game_id: string) => {
         // 心跳 是否成功
@@ -59,7 +44,7 @@ function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rot
     const gameStart = () => {
         api.post("/gameStart", {
             code: codeId.current!.value,
-            app_id: Number(appId.current!.value),
+            app_id: appId,
         })
             .then(({ data }) => {
                 if (data.code === 0) {
@@ -93,7 +78,7 @@ function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rot
     const gameEnd = () => {
         api.post("/gameEnd", {
             game_id: gameId.current,
-            app_id: Number(appId.current!.value),
+            app_id: 1743849192865,
         })
             .then(({ data }) => {
                 if (data.code === 0) {
@@ -188,14 +173,9 @@ function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rot
 
     return (
         <div>
-            <button onClick={getAuth}>鉴权</button>
             <input ref={codeId} placeholder="codeId" />
-            <input ref={appId} placeholder="appId" />
             <button onClick={gameStart}>游戏开始</button>
-
             <button onClick={gameEnd}>游戏结束</button>
-
-
             <button onClick={handleCreateSocket}>创建长连接</button>
             <button onClick={handleDestroySocket}>销毁长连接</button>
         </div>
