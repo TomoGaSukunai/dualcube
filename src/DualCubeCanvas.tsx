@@ -127,7 +127,6 @@ function blockBufferInit(gl: WebGL2RenderingContext, block: CubeBlock): Buffered
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
 
-
     return {
         ...block,
         colorProgramBuffers: {
@@ -184,6 +183,8 @@ function DualCubeCanvas() {
     const rY = useRef(0.4);
     const rotating_axis = useRef(-1);
     const rotating_reverse = useRef(true);
+
+
     useEffect(() => {
         const Blocks: BufferedCubeBlock[] = [] as BufferedCubeBlock[];
         const canvas = canvasRef.current;
@@ -192,7 +193,6 @@ function DualCubeCanvas() {
         if (!gl || !canvas) {
             throw new Error('Failed to get WebGL2 context');
         }
-
 
         for (let i = 0; i < cubeBlocks.length; i++) {
             Blocks[i] = blockBufferInit(gl, cubeBlocks[i]);
@@ -207,7 +207,6 @@ function DualCubeCanvas() {
         const Vmatrix = gl.getUniformLocation(colorProgram, 'Vmatrix');
         const Mmatrix = gl.getUniformLocation(colorProgram, 'Mmatrix');
         const Lmatrix = gl.getUniformLocation(colorProgram, 'Lmatrix');
-
 
         const texProgram = shaderProgramInit(gl, shaders.texVert, shaders.texFrag);
         const texCoord = gl.getAttribLocation(texProgram, 'coordinates');
@@ -231,11 +230,6 @@ function DualCubeCanvas() {
         const textMmatrix = gl.getUniformLocation(textProgram, 'Mmatrix');
         const textSampler = gl.getUniformLocation(textProgram, 'uSampler');
 
-
-
-
-
-
         World.program = {
             colorProgram,
             color,
@@ -244,6 +238,7 @@ function DualCubeCanvas() {
             Mmatrix,
             Vmatrix,
             Pmatrix,
+
             texProgram,
             texCoord,
             texUvs,
@@ -252,6 +247,7 @@ function DualCubeCanvas() {
             texMmatrix,
             texLmatrix,
             texSampler,
+
             textProgram,
             textCoord,
             textUvs,
@@ -262,11 +258,12 @@ function DualCubeCanvas() {
             textArchor,
         };
 
+        //clipped cubeface
         const border = 1;
         const width = 64 - border - border;
         const round = 4;
-        // const images = [o0,o1,o2,o3,o4,o5];
-        Promise.all([loadImage(o0), loadImage(o1), loadImage(o2), loadImage(o3), loadImage(o4), loadImage(o5)])
+
+        Promise.all([o0, o1, o2, o3, o4, o5].map(loadImage))
             .then((imgs: HTMLImageElement[]) => {
                 for (let i = 0; i < 6; i++) {
                     const offScreenCanvas = document.createElement('canvas');
@@ -292,7 +289,6 @@ function DualCubeCanvas() {
                     // offScreenCtx!.fillStyle = `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`;
                     // offScreenCtx!.fillRect(0, 0, 128, 128);
 
-
                     const texture = gl.createTexture();
                     gl.activeTexture(gl.TEXTURE0 + i);
                     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -304,14 +300,9 @@ function DualCubeCanvas() {
                 }
             });
 
+        
 
-        // const foniseIamge = document.createElement('img');
-        // foniseIamge.src = foniseURL;
-        // textureInit(gl, gl.TEXTURE0 + 2, foniseIamge);
-
-
-        // textureInit(gl, gl.TEXTURE0 + 5, senpaiIamge);
-
+        // axis helper text
         const textInfos = ['左', '下', '前', '右', '上', '后'].map((face, i) => {
             const offScreenCanvas = document.createElement('canvas');
             offScreenCanvas.width = 32;
@@ -377,7 +368,6 @@ function DualCubeCanvas() {
 
             // rY.current += 0.001 * deltaTime;
 
-
             if (rotating_axis.current != -1) {
                 const ddR = Math.min(dR.current + 0.01 * deltaTime, Math.PI / 2);
                 const rev = rotating_reverse.current ? -1 : 1;
@@ -400,15 +390,7 @@ function DualCubeCanvas() {
                         const dst = rotating_reverse.current ? maplet[1] : maplet[0];
                         Blocks[dst] = cubeRef[src];
                     }
-                    // console.log(Blocks.map(blk => blk.idx));
-                    // for (const idx in Blocks) {
-                    //     const block = Blocks[idx];
-                    //     const dx = block.vertices[0] - CubeDefine.BLOCKS[idx][0];
-                    //     const dy = block.vertices[1] - CubeDefine.BLOCKS[idx][1];
-                    //     const dz = block.vertices[2] - CubeDefine.BLOCKS[idx][2];
-                    //     console.log(idx, dx, dy, dz);
 
-                    // }
                     dR.current = 0;
                     rotating_axis.current = -1;
 
@@ -416,14 +398,13 @@ function DualCubeCanvas() {
             }
 
             gl.viewport(0, 0, canvasRef.current!.width, canvasRef.current!.height);
-
-            gl.enable(gl.DEPTH_TEST);
             gl?.clearColor(.2, .2, .2, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
 
-
             //draw color part
+            gl.enable(gl.DEPTH_TEST);
+
             gl.useProgram(World.program.colorProgram);
             gl.uniformMatrix4fv(World.program.Pmatrix, false, World.projectMatrix);
             gl.uniformMatrix4fv(World.program.Vmatrix, false, World.viewMatrix);
@@ -433,15 +414,14 @@ function DualCubeCanvas() {
                 const block = Blocks[idx];
 
                 gl.uniformMatrix4fv(World.program.Lmatrix, false, block.moveMatrix);
-
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.colorProgramBuffers.indicesBuffer);
-
                 gl.bindBuffer(gl.ARRAY_BUFFER, block.colorProgramBuffers.coordinatesBuffer);
                 gl.vertexAttribPointer(World.program.coord, 3, gl.FLOAT, false, 0, 0);
                 gl.bindBuffer(gl.ARRAY_BUFFER, block.colorProgramBuffers.colorsBuffer);
                 gl.vertexAttribPointer(World.program.color, 3, gl.FLOAT, false, 0, 0);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, block.colorProgramBuffers.indicesBuffer);
                 gl.drawElements(gl.TRIANGLES, block.innerFaces.indices.length, gl.UNSIGNED_SHORT, 0);
             }
+
 
             //draw texture part
             gl.useProgram(World.program.texProgram);
@@ -454,26 +434,27 @@ function DualCubeCanvas() {
                 gl.uniformMatrix4fv(World.program.texLmatrix, false, block.moveMatrix);
                 for (const texBuffer of block.texProgramBuffers) {
                     // gl.activeTexture(gl.TEXTURE0 + 2);
-                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, texBuffer.indicesBuffer);
                     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer.coordinatesBuffer);
                     gl.vertexAttribPointer(World.program.texCoord, 3, gl.FLOAT, false, 0, 0);
                     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer.uvsBuffer);
                     gl.vertexAttribPointer(World.program.texUvs, 2, gl.FLOAT, false, 0, 0);
-                    gl.uniform1i(World.program.texSampler, texBuffer.textureIdx);
+                    gl.uniform1i(World.program.texSampler, texBuffer.textureIdx);                    
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, texBuffer.indicesBuffer);
                     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
                 }
             }
 
 
+            //draw text part
             gl.enable(gl.DEPTH_TEST);
             gl.enable(gl.BLEND);
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-            //draw text part
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);// alpha blending
+
             gl.useProgram(World.program.textProgram);
             gl.uniformMatrix4fv(World.program.textPmatrix, false, World.projectMatrix);
             gl.uniformMatrix4fv(World.program.textVmatrix, false, World.viewMatrix);
             gl.uniformMatrix4fv(World.program.textMmatrix, false, World.moveMatrix);
-            for (const info of textInfos) {                
+            for (const info of textInfos) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, info.coordBuffer);
                 gl.vertexAttribPointer(World.program.textCoord, 2, gl.FLOAT, false, 0, 0);
                 gl.bindBuffer(gl.ARRAY_BUFFER, info.uvsBuffer);
@@ -491,6 +472,7 @@ function DualCubeCanvas() {
             animationFrameId = requestAnimationFrame(render);
 
         };
+        
         render();
 
         return () => {

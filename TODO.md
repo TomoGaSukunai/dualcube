@@ -1,7 +1,16 @@
 # TODO 
 
-## WebSocketController
- [ ] start game/wsslink with url params 
+## WebSocketController 
+ [ ] Framework
  [ ]
- 
 
+## Command Queue
+ [ ]
+
+## prettifier UI
+ [ ] Containner 
+ [ ] Tosat 
+
+
+## Framework for WebGL && Explain
+ 
