@@ -10,6 +10,7 @@ import o3 from './assets/o3.jpg';
 import o4 from './assets/o4.jpg';
 import o5 from './assets/o5.jpg';
 import ApiDom from './bili-api';
+import { Col, Row } from 'react-bootstrap';
 
 interface glProgram {
     colorProgram: WebGLProgram | null,
@@ -510,28 +511,36 @@ function DualCubeCanvas() {
     };
 
     return <>
-        <canvas ref={canvasRef} />
-        <>
-            <button onClick={() => handleRotate(0, true)}>左顺</button>
-            <button onClick={() => handleRotate(1, true)}>下顺</button>
-            <button onClick={() => handleRotate(2, true)}>前顺</button>
-            <button onClick={() => handleRotate(3, true)}>右顺</button>
-            <button onClick={() => handleRotate(4, true)}>上顺</button>
-            <button onClick={() => handleRotate(5, true)}>后顺</button>
-            <button onClick={() => handleRotate(0, false)}>左逆</button>
-            <button onClick={() => handleRotate(1, false)}>下逆</button>
-            <button onClick={() => handleRotate(2, false)}>前逆</button>
-            <button onClick={() => handleRotate(3, false)}>右逆</button>
-            <button onClick={() => handleRotate(4, false)}>上逆</button>
-            <button onClick={() => handleRotate(5, false)}>右逆</button>
-        </>
-        <>
-            <button onClick={() => handleViewRotate(0, -0.1)}>↑</button>
-            <button onClick={() => handleViewRotate(0, 0.1)}>↓</button>
-            <button onClick={() => handleViewRotate(-0.1, 0)}>←</button>
-            <button onClick={() => handleViewRotate(0.1, 0)}>→</button>
-        </>
-        <ApiDom callback={cmd => handleRotateCommand(cmd)} />
+        <Row xs={8}>
+
+            <Col xs={2}>
+                <button onClick={() => handleRotate(0, true)}>左顺</button>
+                <button onClick={() => handleRotate(1, true)}>下顺</button>
+                <button onClick={() => handleRotate(2, true)}>前顺</button>
+                <button onClick={() => handleRotate(3, true)}>右顺</button>
+                <button onClick={() => handleRotate(4, true)}>上顺</button>
+                <button onClick={() => handleRotate(5, true)}>后顺</button>
+                <button onClick={() => handleRotate(0, false)}>左逆</button>
+                <button onClick={() => handleRotate(1, false)}>下逆</button>
+                <button onClick={() => handleRotate(2, false)}>前逆</button>
+                <button onClick={() => handleRotate(3, false)}>右逆</button>
+                <button onClick={() => handleRotate(4, false)}>上逆</button>
+                <button onClick={() => handleRotate(5, false)}>右逆</button>
+            </Col>
+            <Col xs={8}>
+                <canvas ref={canvasRef} />
+            </Col>
+            <Col xs={2}>
+                <button onClick={() => handleViewRotate(0, -0.1)}>↑</button>
+                <button onClick={() => handleViewRotate(0, 0.1)}>↓</button>
+                <button onClick={() => handleViewRotate(-0.1, 0)}>←</button>
+                <button onClick={() => handleViewRotate(0.1, 0)}>→</button>
+            </Col>
+
+        </Row>
+        <Row xs={4}>
+            <ApiDom callback={cmd => handleRotateCommand(cmd)} />
+        </Row>
     </>;
 
 }

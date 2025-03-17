@@ -1,7 +1,7 @@
 import axios from "axios";
 import { createSocket, destroySocket } from "./socket";
 import { useEffect, useRef } from "react";
-import { Button, InputGroup, Form } from "react-bootstrap";
+import { Button, InputGroup, Form, Row } from "react-bootstrap";
 
 
 const api = axios.create({
@@ -178,12 +178,14 @@ function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rot
         <>
             <InputGroup>
                 <InputGroup.Text>身份码</InputGroup.Text>
-                <Form.Control placeholder="codeId" ref={codeId}/>                
+                <Form.Control placeholder="codeId" ref={codeId} />
             </InputGroup>
+
             <Button onClick={gameStart}>游戏开始</Button>
             <Button onClick={gameEnd}>游戏结束</Button>
             <Button onClick={handleCreateSocket}>创建长连接</Button>
             <Button onClick={handleDestroySocket}>销毁长连接</Button>
+
         </>
     );
 }
