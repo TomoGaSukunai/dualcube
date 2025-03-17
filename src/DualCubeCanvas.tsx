@@ -39,7 +39,6 @@ interface glProgram {
     textArchor: WebGLUniformLocation | null
 }
 
-
 const World = {
     projectMatrix: mat4.getPerspective(45, 1, 0.1, 100),
     viewMatrix: mat4.getEye().translate(0, 0, -5),
@@ -47,9 +46,7 @@ const World = {
     program: {} as glProgram,
 };
 
-
 let timestamp = Date.now();
-
 
 function shaderProgramInit(gl: WebGL2RenderingContext, vertSource: string, fragSource: string) {
 
@@ -300,7 +297,7 @@ function DualCubeCanvas() {
                 }
             });
 
-        
+
 
         // axis helper text
         const textInfos = ['左', '下', '前', '右', '上', '后'].map((face, i) => {
@@ -323,13 +320,15 @@ function DualCubeCanvas() {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
             gl.generateMipmap(gl.TEXTURE_2D);
 
+
+            const textSize = 0.2;
             const coordBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, coordBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-                -0.5, -0.5,
-                0.5, -0.5,
-                -0.5, 0.5,
-                0.5, 0.5,
+                -textSize, -textSize,
+                textSize, -textSize,
+                -textSize, textSize,
+                textSize, textSize,
             ]), gl.STATIC_DRAW);
 
             const uvsBuffer = gl.createBuffer();
@@ -363,6 +362,8 @@ function DualCubeCanvas() {
 
             const deltaTime = Date.now() - timestamp;
             timestamp = Date.now();
+
+
             World.moveMatrix.rotateY(rY.current);
             World.moveMatrix.rotateX(rX.current);
 
@@ -424,6 +425,7 @@ function DualCubeCanvas() {
 
 
             //draw texture part
+            gl.enable(gl.DEPTH_TEST);
             gl.useProgram(World.program.texProgram);
             gl.uniformMatrix4fv(World.program.texPmatrix, false, World.projectMatrix);
             gl.uniformMatrix4fv(World.program.texVmatrix, false, World.viewMatrix);
@@ -433,12 +435,11 @@ function DualCubeCanvas() {
                 const block = Blocks[idx];
                 gl.uniformMatrix4fv(World.program.texLmatrix, false, block.moveMatrix);
                 for (const texBuffer of block.texProgramBuffers) {
-                    // gl.activeTexture(gl.TEXTURE0 + 2);
                     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer.coordinatesBuffer);
                     gl.vertexAttribPointer(World.program.texCoord, 3, gl.FLOAT, false, 0, 0);
                     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer.uvsBuffer);
                     gl.vertexAttribPointer(World.program.texUvs, 2, gl.FLOAT, false, 0, 0);
-                    gl.uniform1i(World.program.texSampler, texBuffer.textureIdx);                    
+                    gl.uniform1i(World.program.texSampler, texBuffer.textureIdx);
                     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, texBuffer.indicesBuffer);
                     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
                 }
@@ -454,6 +455,7 @@ function DualCubeCanvas() {
             gl.uniformMatrix4fv(World.program.textPmatrix, false, World.projectMatrix);
             gl.uniformMatrix4fv(World.program.textVmatrix, false, World.viewMatrix);
             gl.uniformMatrix4fv(World.program.textMmatrix, false, World.moveMatrix);
+
             for (const info of textInfos) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, info.coordBuffer);
                 gl.vertexAttribPointer(World.program.textCoord, 2, gl.FLOAT, false, 0, 0);
@@ -470,9 +472,8 @@ function DualCubeCanvas() {
             World.moveMatrix = mat4.getEye();
 
             animationFrameId = requestAnimationFrame(render);
-
         };
-        
+
         render();
 
         return () => {
@@ -510,22 +511,26 @@ function DualCubeCanvas() {
 
     return <>
         <canvas ref={canvasRef} />
-        <button onClick={() => handleRotate(0, true)}>左顺</button>
-        <button onClick={() => handleRotate(1, true)}>下顺</button>
-        <button onClick={() => handleRotate(2, true)}>前顺</button>
-        <button onClick={() => handleRotate(3, true)}>右顺</button>
-        <button onClick={() => handleRotate(4, true)}>上顺</button>
-        <button onClick={() => handleRotate(5, true)}>后顺</button>
-        <button onClick={() => handleRotate(0, false)}>左逆</button>
-        <button onClick={() => handleRotate(1, false)}>下逆</button>
-        <button onClick={() => handleRotate(2, false)}>前逆</button>
-        <button onClick={() => handleRotate(3, false)}>右逆</button>
-        <button onClick={() => handleRotate(4, false)}>上逆</button>
-        <button onClick={() => handleRotate(5, false)}>右逆</button>
-        <button onClick={() => handleViewRotate(0, -0.1)}>↑</button>
-        <button onClick={() => handleViewRotate(0, 0.1)}>↓</button>
-        <button onClick={() => handleViewRotate(-0.1, 0)}>←</button>
-        <button onClick={() => handleViewRotate(0.1, 0)}>→</button>
+        <>
+            <button onClick={() => handleRotate(0, true)}>左顺</button>
+            <button onClick={() => handleRotate(1, true)}>下顺</button>
+            <button onClick={() => handleRotate(2, true)}>前顺</button>
+            <button onClick={() => handleRotate(3, true)}>右顺</button>
+            <button onClick={() => handleRotate(4, true)}>上顺</button>
+            <button onClick={() => handleRotate(5, true)}>后顺</button>
+            <button onClick={() => handleRotate(0, false)}>左逆</button>
+            <button onClick={() => handleRotate(1, false)}>下逆</button>
+            <button onClick={() => handleRotate(2, false)}>前逆</button>
+            <button onClick={() => handleRotate(3, false)}>右逆</button>
+            <button onClick={() => handleRotate(4, false)}>上逆</button>
+            <button onClick={() => handleRotate(5, false)}>右逆</button>
+        </>
+        <>
+            <button onClick={() => handleViewRotate(0, -0.1)}>↑</button>
+            <button onClick={() => handleViewRotate(0, 0.1)}>↓</button>
+            <button onClick={() => handleViewRotate(-0.1, 0)}>←</button>
+            <button onClick={() => handleViewRotate(0.1, 0)}>→</button>
+        </>
         <ApiDom callback={cmd => handleRotateCommand(cmd)} />
     </>;
 

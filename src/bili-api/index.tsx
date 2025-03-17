@@ -1,17 +1,20 @@
 import axios from "axios";
 import { createSocket, destroySocket } from "./socket";
 import { useEffect, useRef } from "react";
+import { Button, InputGroup, Form } from "react-bootstrap";
+
 
 const api = axios.create({
     baseURL: "/api"
 });
 
 function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rotate: number }) => void }) {
-    // 替换你的秘钥
-    // 替换你的主播身份码
+
+    // 主播身份码
     const codeId = useRef<HTMLInputElement | null>(null);
-    // 替换你的app应用 [这里测试为互动游戏]
+    // 你的app应用 
     const appId = 1743849192865;
+
     // [向 node server请求接口后自动返回]
     const gameId = useRef<string | null>(null);
     // v2改为server response 服务器返回websocket信息，而非手动获取
@@ -172,13 +175,16 @@ function ApiDom({ callback }: { callback: ({ name, rotate }: { name: string, rot
 
 
     return (
-        <div>
-            <input ref={codeId} placeholder="codeId" />
-            <button onClick={gameStart}>游戏开始</button>
-            <button onClick={gameEnd}>游戏结束</button>
-            <button onClick={handleCreateSocket}>创建长连接</button>
-            <button onClick={handleDestroySocket}>销毁长连接</button>
-        </div>
+        <>
+            <InputGroup>
+                <InputGroup.Text>身份码</InputGroup.Text>
+                <Form.Control placeholder="codeId" ref={codeId}/>                
+            </InputGroup>
+            <Button onClick={gameStart}>游戏开始</Button>
+            <Button onClick={gameEnd}>游戏结束</Button>
+            <Button onClick={handleCreateSocket}>创建长连接</Button>
+            <Button onClick={handleDestroySocket}>销毁长连接</Button>
+        </>
     );
 }
 
